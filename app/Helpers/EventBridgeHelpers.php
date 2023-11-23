@@ -1,34 +1,30 @@
 <?php
-
-namespace App\Http\Controllers;
+namespace App\Helpers;
 
 use Aws\Credentials\Credentials;
-use Aws\Credentials\CredentialsInterface;
-use Aws\EventBridge\EventBridgeClient;
-use Aws\S3\S3Client;
 use Aws\Scheduler\SchedulerClient;
-use Carbon\Carbon;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 
-class EventBridgeController extends Controller
+class EventBridgeHelpers 
 {
-    public function __invoke(Request $request) {
+    private $scheduleClient;
+    public function __construct() {
         $credentials = new Credentials(env('AWS_ACCESS_KEY_ID', ''), env('AWS_SECRET_ACCESS_KEY', ''));
-        // $eventBridge = new EventBridgeClient([
-        //     'region'      => 'ap-southeast-1',
-        //     'credentials' => $credentials
-        // ]);
 
-        $scheduleClient = new SchedulerClient([
+        $this->scheduleClient = new SchedulerClient([
             'region'      => 'ap-southeast-1',
             'credentials' => $credentials,
         ]);
+    }
 
+    public function createSchedule(string $name, string $scheduleAt, array $input = [])
+    {
+        if(empty($scheduleAt)){
+            return false;
+        }
         // Params 
         // https://docs.aws.amazon.com/aws-sdk-php/v3/api/api-scheduler-2021-06-30.html#createschedule
-        $result = $scheduleClient->createSchedule([
-            'ActionAfterCompletion' => 'NONE',
+        $result = $this->scheduleClient->createSchedule([
+            'ActionAfterCompletion' => 'DELETE',
             // 'ClientToken' => '<string>',
             'Description' => 'Hello toni was here',
             // 'EndDate' => <integer || string || DateTime>,
@@ -38,8 +34,9 @@ class EventBridgeController extends Controller
             ],
             // 'GroupName' => '<string>',
             // 'KmsKeyArn' => '<string>',
-            'Name' => 'schedule-21-03', // REQUIRED
-            'ScheduleExpression' => 'at(2023-11-10T18:00:00)', // REQUIRED
+            'Name' => $name, // REQUIRED
+            // 'ScheduleExpression' => 'at(2023-11-13T16:00:00)', // REQUIRED
+            'ScheduleExpression' => 'at('.$scheduleAt.')', // REQUIRED
             'ScheduleExpressionTimezone' => 'Asia/Jakarta',
             // 'StartDate' => <integer || string || DateTime>,
             'State' => 'ENABLED',
@@ -96,7 +93,7 @@ class EventBridgeController extends Controller
                     'DetailType' => 'Scheduled Event', // REQUIRED
                     'Source' => 'pattern-EB-save-method', // REQUIRED
                 ],
-                // 'Input' => '<string>',
+                'Input' => json_encode($input),
                 // 'KinesisParameters' => [
                 //     'PartitionKey' => '<string>', // REQUIRED
                 // ],
@@ -121,10 +118,20 @@ class EventBridgeController extends Controller
             ],
         ]);
 
-        dd($result);
+        return $result;
+    }
 
-        return response()->json([
-            'success'
+    public function deleteSchedule(string $name) {
+        if(empty($name)){
+            return false;
+        }
+
+        $result = $this->scheduleClient->deleteSchedule([
+            // 'ClientToken' => '<string>',
+            // 'GroupName' => '<string>',
+            'Name' => $name, // REQUIRED
         ]);
+
+        return $result;
     }
 }

@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\EventBridgeController;
+use App\Http\Controllers\CreateEventBridgeController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
@@ -20,7 +20,6 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('/event-bridge', EventBridgeController::class);
 Route::get('/api-callback', function(Request $request){
     Log::debug('debug api callback : ');
     Log::debug('request : '.json_encode($request->all()));
